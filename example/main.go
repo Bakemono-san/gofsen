@@ -3,6 +3,8 @@ package main
 
 import (
 	"github.com/Bakemono-san/gofsen"
+	"log"
+	"os"
 )
 
 // User représente un utilisateur
@@ -19,19 +21,31 @@ var users = []User{
 }
 
 func main() {
+	// Afficher les informations de configuration CORS
+	log.Println("🔧 CORS Configuration:")
+	log.Printf("   CORS_ALLOWED_ORIGINS: %s", getEnvDefault("CORS_ALLOWED_ORIGINS", "not set"))
+	log.Printf("   ALLOWED_ORIGINS: %s", getEnvDefault("ALLOWED_ORIGINS", "not set"))
+	log.Printf("   CORS_ALLOWED_METHODS: %s", getEnvDefault("CORS_ALLOWED_METHODS", "not set"))
+	log.Printf("   CORS_ALLOWED_HEADERS: %s", getEnvDefault("CORS_ALLOWED_HEADERS", "not set"))
+	log.Println()
+
 	// Créer une nouvelle instance Gofsen
 	app := gofsen.New()
 
 	// Middlewares globaux
 	app.Use(gofsen.Logger())
 	app.Use(gofsen.Recovery())
-	app.Use(gofsen.CORS())
+	
+	// CORS configuré depuis les variables d'environnement
+	// Utilisez CORSFromEnv() au lieu de CORS() pour la configuration env
+	app.Use(gofsen.CORSFromEnv())
 
 	// Routes de base
 	app.GET("/", func(c *gofsen.Context) {
 		c.JSON(map[string]string{
 			"message": "Welcome to Gofsen Framework!",
 			"version": gofsen.Version,
+			"cors":    "Configured from environment variables",
 		})
 	})
 
@@ -130,4 +144,12 @@ func parseID(id string) int {
 		return 2
 	}
 	return 0
+}
+
+// getEnvDefault récupère une variable d'environnement avec valeur par défaut
+func getEnvDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
