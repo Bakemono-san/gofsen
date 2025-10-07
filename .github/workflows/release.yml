@@ -42,26 +42,30 @@ jobs:
           CLOUDSMITH_ORG: ${{ vars.CLOUDSMITH_ORG }}
           CLOUDSMITH_REPO: ${{ vars.CLOUDSMITH_REPO }}
         run: |
-          if [ -z "${CLOUDSMITH_TOKEN:-}" ] || [ -z "${CLOUDSMITH_ORG:-}" ] || [ -z "${CLOUDSMITH_REPO:-}" ]; then
-            echo "Cloudsmith env not set (CLOUDSMITH_TOKEN/ORG/REPO). Skipping upload."
+          if [ -z "${CLOUDSMITH_TOKEN:-}" ]; then
+            echo "Cloudsmith token not set; skipping upload."
             exit 0
           fi
+          # Normalize org/repo slugs to lowercase and set safe defaults if empty
+          ORG="${CLOUDSMITH_ORG:-bakemono-san}"; ORG="${ORG,,}"
+          REPO="${CLOUDSMITH_REPO:-gofsen}"; REPO="${REPO,,}"
+          echo "Using Cloudsmith repo: ${ORG}/${REPO}"
           python3 -m pip install --user --upgrade cloudsmith-cli
           export PATH="$HOME/.local/bin:$PATH"
           set -euo pipefail
-          echo "Pushing .deb packages to Cloudsmith for $CLOUDSMITH_ORG/$CLOUDSMITH_REPO"
+          echo "Pushing .deb packages to Cloudsmith for ${ORG}/${REPO}"
           shopt -s nullglob
           for f in dist/*.deb; do
             echo "Uploading $f"
-            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/ubuntu/focal" "$f" --republish --no-wait-for-sync || true
-            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/ubuntu/jammy" "$f" --republish --no-wait-for-sync || true
-            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/ubuntu/noble" "$f" --republish --no-wait-for-sync || true
-            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/debian/bullseye" "$f" --republish --no-wait-for-sync || true
-            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/debian/bookworm" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "${ORG}/${REPO}/ubuntu/focal" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "${ORG}/${REPO}/ubuntu/jammy" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "${ORG}/${REPO}/ubuntu/noble" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "${ORG}/${REPO}/debian/bullseye" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "${ORG}/${REPO}/debian/bookworm" "$f" --republish --no-wait-for-sync || true
           done
-          echo "Pushing .rpm packages to Cloudsmith for $CLOUDSMITH_ORG/$CLOUDSMITH_REPO"
+          echo "Pushing .rpm packages to Cloudsmith for ${ORG}/${REPO}"
           for f in dist/*.rpm; do
             echo "Uploading $f"
-            cloudsmith push rpm "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/el/8" "$f" --republish --no-wait-for-sync || true
-            cloudsmith push rpm "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/el/9" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push rpm "${ORG}/${REPO}/el/8" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push rpm "${ORG}/${REPO}/el/9" "$f" --republish --no-wait-for-sync || true
           done
