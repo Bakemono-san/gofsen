@@ -34,3 +34,31 @@ jobs:
           # Create this secret in the gofsen repo settings: Settings -> Secrets -> Actions -> New repository secret
           # Name: GORELEASER_TOKEN, Value: <your PAT>
           GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
+
+      - name: Upload deb/rpm to Cloudsmith (optional)
+        if: ${{ secrets.CLOUDSMITH_TOKEN != '' && vars.CLOUDSMITH_ORG != '' && vars.CLOUDSMITH_REPO != '' }}
+        env:
+          CLOUDSMITH_TOKEN: ${{ secrets.CLOUDSMITH_TOKEN }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_TOKEN }}
+          CLOUDSMITH_ORG: ${{ vars.CLOUDSMITH_ORG }}
+          CLOUDSMITH_REPO: ${{ vars.CLOUDSMITH_REPO }}
+        run: |
+          python3 -m pip install --user --upgrade cloudsmith-cli
+          export PATH="$HOME/.local/bin:$PATH"
+          set -euo pipefail
+          echo "Pushing .deb packages to Cloudsmith for $CLOUDSMITH_ORG/$CLOUDSMITH_REPO"
+          shopt -s nullglob
+          for f in dist/*.deb; do
+            echo "Uploading $f"
+            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/ubuntu/focal" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/ubuntu/jammy" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/ubuntu/noble" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/debian/bullseye" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push deb "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/debian/bookworm" "$f" --republish --no-wait-for-sync || true
+          done
+          echo "Pushing .rpm packages to Cloudsmith for $CLOUDSMITH_ORG/$CLOUDSMITH_REPO"
+          for f in dist/*.rpm; do
+            echo "Uploading $f"
+            cloudsmith push rpm "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/el/8" "$f" --republish --no-wait-for-sync || true
+            cloudsmith push rpm "$CLOUDSMITH_ORG/$CLOUDSMITH_REPO/el/9" "$f" --republish --no-wait-for-sync || true
+          done
