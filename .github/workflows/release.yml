@@ -36,13 +36,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
 
       - name: Upload deb/rpm to Cloudsmith (optional)
-        if: ${{ secrets.CLOUDSMITH_TOKEN != '' && vars.CLOUDSMITH_ORG != '' && vars.CLOUDSMITH_REPO != '' }}
         env:
           CLOUDSMITH_TOKEN: ${{ secrets.CLOUDSMITH_TOKEN }}
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_TOKEN }}
           CLOUDSMITH_ORG: ${{ vars.CLOUDSMITH_ORG }}
           CLOUDSMITH_REPO: ${{ vars.CLOUDSMITH_REPO }}
         run: |
+          if [ -z "${CLOUDSMITH_TOKEN:-}" ] || [ -z "${CLOUDSMITH_ORG:-}" ] || [ -z "${CLOUDSMITH_REPO:-}" ]; then
+            echo "Cloudsmith env not set (CLOUDSMITH_TOKEN/ORG/REPO). Skipping upload."
+            exit 0
+          fi
           python3 -m pip install --user --upgrade cloudsmith-cli
           export PATH="$HOME/.local/bin:$PATH"
           set -euo pipefail
