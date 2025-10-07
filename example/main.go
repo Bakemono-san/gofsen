@@ -2,9 +2,10 @@
 package main
 
 import (
-	"github.com/Bakemono-san/gofsen"
 	"log"
 	"os"
+
+	"github.com/Bakemono-san/gofsen"
 )
 
 // User représente un utilisateur
@@ -35,7 +36,7 @@ func main() {
 	// Middlewares globaux
 	app.Use(gofsen.Logger())
 	app.Use(gofsen.Recovery())
-	
+
 	// CORS configuré depuis les variables d'environnement
 	// Utilisez CORSFromEnv() au lieu de CORS() pour la configuration env
 	app.Use(gofsen.CORSFromEnv())

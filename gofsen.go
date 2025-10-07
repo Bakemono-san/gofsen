@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -317,13 +318,40 @@ func Recovery() MiddlewareFunc {
 	}
 }
 
-// CORS middleware pour gérer les CORS
+// CORS middleware pour gérer les CORS avec support des variables d'environnement
 func CORS() MiddlewareFunc {
 	return CORSWithConfig(CORSConfig{
-		AllowOrigins: []string{"*"},
+		AllowOrigins: getCORSOriginsFromEnv(),
 		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowHeaders: []string{"Content-Type", "Authorization"},
 	})
+}
+
+// getCORSOriginsFromEnv récupère les origines CORS depuis les variables d'environnement
+func getCORSOriginsFromEnv() []string {
+	// Essayer CORS_ALLOWED_ORIGINS d'abord
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if corsOrigins == "" {
+		// Fallback vers ALLOWED_ORIGINS
+		corsOrigins = os.Getenv("ALLOWED_ORIGINS")
+	}
+
+	if corsOrigins == "" {
+		// Valeur par défaut si aucune variable d'environnement n'est définie
+		return []string{"*"}
+	}
+
+	// Séparer les origines par des virgules et nettoyer les espaces
+	origins := strings.Split(corsOrigins, ",")
+	var cleanOrigins []string
+	for _, origin := range origins {
+		cleaned := strings.TrimSpace(origin)
+		if cleaned != "" {
+			cleanOrigins = append(cleanOrigins, cleaned)
+		}
+	}
+
+	return cleanOrigins
 }
 
 // CORSConfig configuration pour CORS
@@ -331,6 +359,60 @@ type CORSConfig struct {
 	AllowOrigins []string
 	AllowMethods []string
 	AllowHeaders []string
+}
+
+// CORSFromEnv crée un middleware CORS configuré depuis les variables d'environnement
+// Variables supportées:
+// - CORS_ALLOWED_ORIGINS ou ALLOWED_ORIGINS: origines autorisées (séparées par des virgules)
+// - CORS_ALLOWED_METHODS: méthodes autorisées (séparées par des virgules)
+// - CORS_ALLOWED_HEADERS: headers autorisés (séparés par des virgules)
+func CORSFromEnv() MiddlewareFunc {
+	config := CORSConfig{
+		AllowOrigins: getCORSOriginsFromEnv(),
+		AllowMethods: getCORSMethodsFromEnv(),
+		AllowHeaders: getCORSHeadersFromEnv(),
+	}
+	return CORSWithConfig(config)
+}
+
+// getCORSMethodsFromEnv récupère les méthodes CORS depuis les variables d'environnement
+func getCORSMethodsFromEnv() []string {
+	corsMethods := os.Getenv("CORS_ALLOWED_METHODS")
+	if corsMethods == "" {
+		// Valeurs par défaut
+		return []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
+	}
+
+	methods := strings.Split(corsMethods, ",")
+	var cleanMethods []string
+	for _, method := range methods {
+		cleaned := strings.TrimSpace(strings.ToUpper(method))
+		if cleaned != "" {
+			cleanMethods = append(cleanMethods, cleaned)
+		}
+	}
+
+	return cleanMethods
+}
+
+// getCORSHeadersFromEnv récupère les headers CORS depuis les variables d'environnement
+func getCORSHeadersFromEnv() []string {
+	corsHeaders := os.Getenv("CORS_ALLOWED_HEADERS")
+	if corsHeaders == "" {
+		// Valeurs par défaut
+		return []string{"Content-Type", "Authorization"}
+	}
+
+	headers := strings.Split(corsHeaders, ",")
+	var cleanHeaders []string
+	for _, header := range headers {
+		cleaned := strings.TrimSpace(header)
+		if cleaned != "" {
+			cleanHeaders = append(cleanHeaders, cleaned)
+		}
+	}
+
+	return cleanHeaders
 }
 
 // CORSWithConfig CORS avec configuration personnalisée

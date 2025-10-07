@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -216,5 +217,121 @@ func TestRecovery(t *testing.T) {
 
 	if w.Code != 500 {
 		t.Errorf("Expected status 500, got %d", w.Code)
+	}
+}
+
+func TestCORSFromEnv(t *testing.T) {
+	// Sauvegarder les variables d'environnement existantes
+	originalOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	originalMethods := os.Getenv("CORS_ALLOWED_METHODS")
+	originalHeaders := os.Getenv("CORS_ALLOWED_HEADERS")
+
+	// Nettoyer après le test
+	defer func() {
+		os.Setenv("CORS_ALLOWED_ORIGINS", originalOrigins)
+		os.Setenv("CORS_ALLOWED_METHODS", originalMethods)
+		os.Setenv("CORS_ALLOWED_HEADERS", originalHeaders)
+	}()
+
+	// Test avec variables d'environnement personnalisées
+	os.Setenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,https://myapp.com")
+	os.Setenv("CORS_ALLOWED_METHODS", "GET,POST")
+	os.Setenv("CORS_ALLOWED_HEADERS", "Content-Type,X-Custom-Header")
+
+	app := New()
+	app.Use(CORSFromEnv())
+
+	app.GET("/test", func(c *Context) {
+		c.JSON(map[string]string{"message": "test"})
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Origin", "http://localhost:3000")
+	w := httptest.NewRecorder()
+
+	app.ServeHTTP(w, req)
+
+	corsOrigin := w.Header().Get("Access-Control-Allow-Origin")
+	if corsOrigin != "http://localhost:3000" {
+		t.Errorf("Expected CORS origin 'http://localhost:3000', got '%s'", corsOrigin)
+	}
+
+	corsMethods := w.Header().Get("Access-Control-Allow-Methods")
+	if corsMethods != "GET, POST" {
+		t.Errorf("Expected CORS methods 'GET, POST', got '%s'", corsMethods)
+	}
+
+	corsHeaders := w.Header().Get("Access-Control-Allow-Headers")
+	if corsHeaders != "Content-Type, X-Custom-Header" {
+		t.Errorf("Expected CORS headers 'Content-Type, X-Custom-Header', got '%s'", corsHeaders)
+	}
+}
+
+func TestCORSFromEnvWithFallback(t *testing.T) {
+	// Sauvegarder les variables d'environnement existantes
+	originalCorsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	originalAllowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+
+	// Nettoyer après le test
+	defer func() {
+		os.Setenv("CORS_ALLOWED_ORIGINS", originalCorsOrigins)
+		os.Setenv("ALLOWED_ORIGINS", originalAllowedOrigins)
+	}()
+
+	// Supprimer CORS_ALLOWED_ORIGINS et utiliser ALLOWED_ORIGINS
+	os.Unsetenv("CORS_ALLOWED_ORIGINS")
+	os.Setenv("ALLOWED_ORIGINS", "https://example.com")
+
+	app := New()
+	app.Use(CORSFromEnv())
+
+	app.GET("/test", func(c *Context) {
+		c.JSON(map[string]string{"message": "test"})
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Origin", "https://example.com")
+	w := httptest.NewRecorder()
+
+	app.ServeHTTP(w, req)
+
+	corsOrigin := w.Header().Get("Access-Control-Allow-Origin")
+	if corsOrigin != "https://example.com" {
+		t.Errorf("Expected CORS origin 'https://example.com', got '%s'", corsOrigin)
+	}
+}
+
+func TestCORSFromEnvWithDefaults(t *testing.T) {
+	// Sauvegarder les variables d'environnement existantes
+	originalCorsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	originalAllowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+
+	// Nettoyer après le test
+	defer func() {
+		os.Setenv("CORS_ALLOWED_ORIGINS", originalCorsOrigins)
+		os.Setenv("ALLOWED_ORIGINS", originalAllowedOrigins)
+	}()
+
+	// Supprimer toutes les variables d'environnement CORS
+	os.Unsetenv("CORS_ALLOWED_ORIGINS")
+	os.Unsetenv("ALLOWED_ORIGINS")
+
+	app := New()
+	app.Use(CORSFromEnv())
+
+	app.GET("/test", func(c *Context) {
+		c.JSON(map[string]string{"message": "test"})
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Origin", "http://localhost:3000")
+	w := httptest.NewRecorder()
+
+	app.ServeHTTP(w, req)
+
+	// Avec "*" par défaut, toutes les origines sont autorisées
+	corsOrigin := w.Header().Get("Access-Control-Allow-Origin")
+	if corsOrigin != "http://localhost:3000" {
+		t.Errorf("Expected CORS origin 'http://localhost:3000', got '%s'", corsOrigin)
 	}
 }

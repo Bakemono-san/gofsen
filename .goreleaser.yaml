@@ -1,0 +1,95 @@
+# GoReleaser configuration for Gofsen
+# See: https://goreleaser.com/
+
+project_name: gofsen
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: gofsen-cli
+    main: ./cmd/gofsen-cli
+    binary: gofsen-cli
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+archives:
+  - id: archive
+    builds:
+      - gofsen-cli
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: 'checksums_{{ .Version }}.txt'
+
+signs:
+  - artifacts: checksum
+
+changelog:
+  sort: asc
+  use: git
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+brews:
+  - name: gofsen-cli
+    description: "Gofsen CLI - Minimalist web API framework scaffolding for Go"
+    homepage: "https://github.com/Bakemono-san/gofsen"
+    repository:
+      owner: Bakemono-san
+      name: homebrew-tap
+    commit_author:
+      name: Bakemono-san
+      email: noreply@example.com
+    directory: Formula
+    install: |
+      bin.install "gofsen-cli"
+    test: |
+      system "#{bin}/gofsen-cli", "--version"
+
+nfpms:
+  - id: deb-rpm
+    package_name: gofsen-cli
+    file_name_template: '{{ .ProjectName }}-cli_{{ .Version }}_{{ .Arch }}'
+    homepage: "https://github.com/Bakemono-san/gofsen"
+    description: "Gofsen CLI - Minimalist web API framework scaffolding for Go"
+    maintainer: "Bakemono-san <noreply@example.com>"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/local/bin
+
+scoops:
+  - name: gofsen-cli
+    repository:
+      owner: Bakemono-san
+      name: scoop-bucket
+    homepage: "https://github.com/Bakemono-san/gofsen"
+    description: "Gofsen CLI - Minimalist web API framework scaffolding for Go"
+    license: MIT
+    persist: []

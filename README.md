@@ -16,6 +16,26 @@
 go get github.com/Bakemono-san/gofsen
 ```
 
+### CLI (gofsen-cli) Installation
+
+You can install the CLI in multiple ways:
+
+- Using go install (latest from main):
+
+```bash
+go install github.com/Bakemono-san/gofsen/cmd/gofsen-cli@latest
+```
+
+- Using Homebrew (macOS/Linux):
+
+```bash
+brew tap Bakemono-san/homebrew-tap
+brew install gofsen-cli
+```
+
+- Download prebuilt binaries (Windows/macOS/Linux) from the
+[Releases](https://github.com/Bakemono-san/gofsen/releases) page.
+
 ## 🚀 Quick Start
 
 ```go
@@ -214,10 +234,13 @@ c.Next()                               // Next middleware
 gofsen.Logger()                        // Request logger
 gofsen.Recovery()                      // Panic recovery
 gofsen.CORS()                          // CORS with defaults
+gofsen.CORSFromEnv()                   // CORS from environment variables
 gofsen.CORSWithConfig(config)          // CORS with custom config
 ```
 
 ## 🔧 CORS Configuration
+
+### Manual Configuration
 
 ```go
 corsConfig := gofsen.CORSConfig{
@@ -227,6 +250,54 @@ corsConfig := gofsen.CORSConfig{
 }
 
 app.Use(gofsen.CORSWithConfig(corsConfig))
+```
+
+### Environment Variables Configuration
+
+Gofsen supports configuring CORS through environment variables for easier deployment and configuration management:
+
+```go
+// Use CORS configured from environment variables
+app.Use(gofsen.CORSFromEnv())
+```
+
+**Supported Environment Variables:**
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `CORS_ALLOWED_ORIGINS` | Allowed origins (comma-separated) | `*` | `http://localhost:3000,https://myapp.com` |
+| `ALLOWED_ORIGINS` | Fallback for allowed origins | `*` | `https://example.com` |
+| `CORS_ALLOWED_METHODS` | Allowed HTTP methods | `GET,POST,PUT,DELETE,PATCH,OPTIONS` | `GET,POST,PUT` |
+| `CORS_ALLOWED_HEADERS` | Allowed headers | `Content-Type,Authorization` | `Content-Type,X-API-Key` |
+
+**Example .env file:**
+
+```bash
+# CORS Configuration
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://myapp.com
+CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,PATCH,OPTIONS
+CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With
+```
+
+**Usage in code:**
+
+```go
+package main
+
+import "github.com/Bakemono-san/gofsen"
+
+func main() {
+    app := gofsen.New()
+    
+    // CORS will automatically read from environment variables
+    app.Use(gofsen.CORSFromEnv())
+    
+    app.GET("/", func(c *gofsen.Context) {
+        c.JSON(map[string]string{"message": "CORS configured from env!"})
+    })
+    
+    app.Listen("8080")
+}
 ```
 
 ## 📊 Framework Comparison
@@ -272,7 +343,7 @@ Gofsen is optimized for excellent performance with a simple API:
 
 ## 🤝 Contributing
 
-Contributions are welcome! 
+Contributions are welcome!
 
 1. Fork the project
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)

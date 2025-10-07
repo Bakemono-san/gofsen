@@ -1,0 +1,13 @@
+# Build artifacts
+bin/
+dist/
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+
+# Go
+*.out
+coverage/
+go.work
