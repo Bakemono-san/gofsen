@@ -56,22 +56,21 @@ changelog:
       - '^docs:'
       - '^test:'
 
-## Homebrew tap publishing is disabled for now (create the tap repo to enable)
-# brews:
-#   - name: gofsen-cli
-#     description: "Gofsen CLI - Minimalist web API framework scaffolding for Go"
-#     homepage: "https://github.com/Bakemono-san/gofsen"
-#     repository:
-#       owner: Bakemono-san
-#       name: homebrew-tap
-#     commit_author:
-#       name: Bakemono-san
-#       email: noreply@example.com
-#     directory: Formula
-#     install: |
-#       bin.install "gofsen-cli"
-#     test: |
-#       system "#{bin}/gofsen-cli", "--version"
+brews:
+  - name: gofsen-cli
+    description: "Gofsen CLI - Minimalist web API framework scaffolding for Go"
+    homepage: "https://github.com/Bakemono-san/gofsen"
+    repository:
+      owner: Bakemono-san
+      name: homebrew-tap
+    commit_author:
+      name: Bakemono-san
+      email: noreply@example.com
+    directory: Formula
+    install: |
+      bin.install "gofsen-cli"
+    test: |
+      system "#{bin}/gofsen-cli", "--version"
 
 nfpms:
   - id: deb-rpm
