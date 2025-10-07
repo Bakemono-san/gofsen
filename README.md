@@ -33,8 +33,57 @@ brew tap Bakemono-san/homebrew-tap
 brew install gofsen-cli
 ```
 
+- Linux via APT (Cloudsmith hosted repo):
+
+```bash
+# Add the APT repository (Ubuntu/Debian)
+curl -1sLf 'https://dl.cloudsmith.io/public/bakemono-san/gofsen/setup.deb.sh' | sudo -E bash
+
+# Install
+sudo apt update
+sudo apt install gofsen-cli
+```
+
+- RHEL/CentOS/Alma/Rocky via YUM/DNF (Cloudsmith hosted repo):
+
+```bash
+# Add the YUM/DNF repository
+curl -1sLf 'https://dl.cloudsmith.io/public/bakemono-san/gofsen/setup.rpm.sh' | sudo -E bash
+
+# Install
+sudo dnf install gofsen-cli
+# or: sudo yum install gofsen-cli
+```
+
 - Download prebuilt binaries (Windows/macOS/Linux) from the
 [Releases](https://github.com/Bakemono-san/gofsen/releases) page.
+
+Verify installation:
+
+```bash
+gofsen-cli --version
+```
+
+CLI quickstart:
+
+```bash
+# Create a new project (interactive)
+gofsen-cli new
+
+# Generate CRUD routes for a resource
+gofsen-cli gen route users
+
+# Generate a middleware
+gofsen-cli gen middleware auth
+
+# Generate a simple handler
+gofsen-cli gen handler status
+```
+
+Tip:
+
+- Homebrew upgrade later: `brew update && brew upgrade gofsen-cli`
+- If APT says it can't find the package, ensure you added the repo (lowercase URL) and ran `sudo apt update`.
 
 ## 🚀 Quick Start
 
