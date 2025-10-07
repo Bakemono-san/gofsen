@@ -29,4 +29,8 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN || secrets.GITHUB_TOKEN }}
+          # Use a Personal Access Token with repo access so GoReleaser can create releases
+          # and push to the external Homebrew tap repository.
+          # Create this secret in the gofsen repo settings: Settings -> Secrets -> Actions -> New repository secret
+          # Name: GORELEASER_TOKEN, Value: <your PAT>
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
