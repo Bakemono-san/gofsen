@@ -150,21 +150,26 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		middlewareIndex: -1,
 	}
 
-	// Trouver la route correspondante
-	route, params := r.findRoute(req.Method, req.URL.Path)
-	if route == nil {
-		ctx.Status(404).JSON(map[string]string{"error": "Route not found"})
-		return
+	if req.Method == "OPTIONS" {
+		ctx.middleware = append(ctx.middleware, DefaultOptionsHandler)
+	} else {
+		// Trouver la route correspondante
+		route, params := r.findRoute(req.Method, req.URL.Path)
+		if route == nil {
+			ctx.Status(404).JSON(map[string]string{"error": "Route not found"})
+			return
+		}
+
+		// Ajouter les paramètres de route au contexte
+		ctx.Params = params
+
+		// Exécuter les middlewares puis le handler
+		finalHandler := func(c *Context) {
+			route.Handler(c)
+		}
+		ctx.middleware = append(ctx.middleware, finalHandler)
 	}
 
-	// Ajouter les paramètres de route au contexte
-	ctx.Params = params
-
-	// Exécuter les middlewares puis le handler
-	finalHandler := func(c *Context) {
-		route.Handler(c)
-	}
-	ctx.middleware = append(ctx.middleware, finalHandler)
 	ctx.Next()
 }
 
@@ -419,35 +424,53 @@ func getCORSHeadersFromEnv() []string {
 func CORSWithConfig(config CORSConfig) MiddlewareFunc {
 	return func(c *Context) {
 		origin := c.Request.Header.Get("Origin")
+		var method string = ""
+		if c.Request.Method == "OPTIONS" {
+			method = c.Request.Header.Get("Access-Control-Request-Method")
+		} else {
+			method = c.Request.Method
+		}
 
 		// Vérifier si l'origine est autorisée
-		allowed := false
+		is_allowed_origin := false
 		for _, allowedOrigin := range config.AllowOrigins {
 			if allowedOrigin == "*" || allowedOrigin == origin {
-				allowed = true
+				is_allowed_origin = true
 				break
 			}
 		}
 
-		if allowed {
+		// Vérifier si le methode est autorisée
+		is_allowed_method := false
+		for _, allowedMethod := range config.AllowMethods {
+			if allowedMethod == "*" || allowedMethod == method {
+				is_allowed_method = true
+				break
+			}
+		}
+
+		if is_allowed_origin && is_allowed_method {
 			if origin != "" {
 				c.ResponseWriter.Header().Set("Access-Control-Allow-Origin", origin)
 			} else {
 				c.ResponseWriter.Header().Set("Access-Control-Allow-Origin", "*")
 			}
-		}
+			c.ResponseWriter.Header().Set("Access-Control-Allow-Methods", strings.Join(config.AllowMethods, ", "))
+			c.ResponseWriter.Header().Set("Access-Control-Allow-Headers", strings.Join(config.AllowHeaders, ", "))
+			c.ResponseWriter.Header().Set("Access-Control-Allow-Credentials", "true")
 
-		c.ResponseWriter.Header().Set("Access-Control-Allow-Methods", strings.Join(config.AllowMethods, ", "))
-		c.ResponseWriter.Header().Set("Access-Control-Allow-Headers", strings.Join(config.AllowHeaders, ", "))
-		c.ResponseWriter.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if c.Request.Method == "OPTIONS" {
-			c.Status(204)
-			return
+			if c.Request.Method == "OPTIONS" {
+				c.Status(204)
+				return
+			}
 		}
 
 		c.Next()
 	}
+}
+
+func DefaultOptionsHandler(c *Context) {
+	c.Status(204)
 }
 
 // parseQuery parse la query string
